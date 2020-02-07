@@ -1,0 +1,10 @@
+{
+  "name": "geojson-viz",
+  "dependencies": {
+    "@turf/centroid": "6.0.2",
+    "express": "4.x"
+  },
+  "devDependencies": {
+    "webpack": "4.x"
+  }
+}
