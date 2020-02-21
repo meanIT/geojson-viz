@@ -1,10 +1,14 @@
 {
   "name": "geojson-viz",
   "dependencies": {
+    "@mapbox/geojsonhint": "3.0.0",
     "@turf/centroid": "6.0.2",
     "express": "4.x"
   },
   "devDependencies": {
-    "webpack": "4.x"
+    "webpack": "4.32.0"
+  },
+  "scripts": {
+    "start": "env NODE_ENV=development node ."
   }
 }

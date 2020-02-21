@@ -1,9 +1,9 @@
 'use strict';
 
-console.log('TT', require('@turf/centroid'))
 const centroid = require('@turf/centroid').default;
+const geojsonhint = require('@mapbox/geojsonhint').hint;
 
-const map = L.map('map').setView([51.505, -0.09], 13);
+const map = L.map('map').setView([0, 0], 4);
 
 L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
   attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
@@ -14,11 +14,39 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
 
 const app = new Vue({
   data: () => ({ content: '' }),
+  mounted: function() {
+    this._editor = CodeMirror.fromTextArea(document.querySelector('#geojson-input'), {
+      lineNumbers: true
+    });
+
+    this._editor.on('changes', (instance) => {
+      this.content = instance.getValue();
+      this.draw();
+    });
+  },
   methods: {
     draw: async function() {
-      const data = JSON.parse(this.content);
+      let data = null;
+      
+      try {
+        data = JSON.parse(this.content);
+      } catch (err) {
+        return;
+      }
+      if (data == null) {
+        return;
+      }
 
-      L.geoJSON(data).addTo(map);
+      const errors = geojsonhint(this.content);
+      if (errors != null && errors.length > 0) {
+        console.log(errors);
+        return;
+      }
+
+      if (this._layer != null) {
+        this._layer.remove();
+      }
+      this._layer = L.geoJSON(data).addTo(map);
 
       const center = centroid(data);
 
@@ -27,11 +55,10 @@ const app = new Vue({
     }
   },
   template: `
-    <div>
-      <textarea v-model="content"></textarea>
-      <button v-on:click="draw">Draw</button>
+    <div id="app">
+      <textarea id="geojson-input" v-model="content" v-on:keyup="draw()"></textarea>
     </div>
   `
 });
 
-app.$mount('#content');
+app.$mount('#app');
