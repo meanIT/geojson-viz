@@ -29,3 +29,8 @@ body {
 .CodeMirror {
   height: 100% !important;
 }
+
+.error-marker {
+  width: 10px !important;
+  background-color: #ff0000;
+}

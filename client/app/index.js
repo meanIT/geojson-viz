@@ -16,7 +16,8 @@ const app = new Vue({
   data: () => ({ content: '' }),
   mounted: function() {
     this._editor = CodeMirror.fromTextArea(document.querySelector('#geojson-input'), {
-      lineNumbers: true
+      lineNumbers: true,
+      gutters: ['error']
     });
 
     this._editor.on('changes', (instance) => {
@@ -37,9 +38,12 @@ const app = new Vue({
         return;
       }
 
+      this._editor.clearGutter('error');
       const errors = geojsonhint(this.content);
       if (errors != null && errors.length > 0) {
-        console.log(errors);
+        for (const error of errors) {
+          this._editor.setGutterMarker(error.line, 'error', makeMarker(error.message));
+        }
         return;
       }
 
@@ -62,3 +66,10 @@ const app = new Vue({
 });
 
 app.$mount('#app');
+
+function makeMarker(msg) {
+  var marker = document.createElement('div');
+  marker.classList.add('error-marker');
+  marker.innerHTML = '&nbsp;';
+  return marker;
+}
