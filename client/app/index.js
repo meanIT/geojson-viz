@@ -71,5 +71,11 @@ function makeMarker(msg) {
   var marker = document.createElement('div');
   marker.classList.add('error-marker');
   marker.innerHTML = '&nbsp;';
+
+  var error = document.createElement('div');
+  error.innerHTML = msg;
+  error.classList.add('error-message');
+  marker.appendChild(error);
+
   return marker;
 }
