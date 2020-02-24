@@ -1,19 +1,27 @@
 'use strict';
 
+const axios = require('axios');
 const centroid = require('@turf/centroid').default;
 const geojsonhint = require('@mapbox/geojsonhint').hint;
 
 const map = L.map('map').setView([0, 0], 4);
 
+const accessToken = 'pk.eyJ1IjoidmthcnBvdjEiLCJhIjoiY2s2Y29zOGVsMDV5ODNtcGN5NTNhb2FhbSJ9.XqXvO2OGxFjkaLo3u6lO5g';
+
 L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
   attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
   maxZoom: 18,
   id: 'mapbox/streets-v11',
-  accessToken: 'pk.eyJ1IjoidmthcnBvdjEiLCJhIjoiY2s2Y29zOGVsMDV5ODNtcGN5NTNhb2FhbSJ9.XqXvO2OGxFjkaLo3u6lO5g'
+  accessToken: accessToken
 }).addTo(map);
 
 const app = new Vue({
-  data: () => ({ content: '' }),
+  data: () => ({
+    content: '',
+    searchText: '',
+    searching: false,
+    searchResults: []
+  }),
   mounted: function() {
     this._editor = CodeMirror.fromTextArea(document.querySelector('#geojson-input'), {
       lineNumbers: true,
@@ -56,10 +64,29 @@ const app = new Vue({
 
       const [lng, lat] = center.geometry.coordinates;
       map.panTo(new L.LatLng(lat, lng));
+    },
+    search: async function() {
+      const results = await geocode(this.searchText);
+      this.searchResults = results.features;
     }
   },
   template: `
     <div id="app">
+      <div>
+        <input
+          type="text"
+          placeholder="Search for Address or Place"
+          class="autocomplete"
+          v-on:focus="searching = true"
+          v-on:blur="searching = false"
+          v-model="searchText"
+          v-on:change="search()">
+        <div class="autocomplete-results">
+          <div v-for="result in searchResults">
+            {{result.place_name}}
+          </div>
+        </div>
+      </div>
       <textarea id="geojson-input" v-model="content" v-on:keyup="draw()"></textarea>
     </div>
   `
@@ -78,4 +105,14 @@ function makeMarker(msg) {
   marker.appendChild(error);
 
   return marker;
+}
+
+async function geocode(str) {
+  const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/' +
+    encodeURIComponent(str) + '.json?' +
+    `access_token=${encodeURIComponent(accessToken)}&autocomplete=true`;
+  
+  const res = await axios.get(url);
+
+  return res.data;
 }

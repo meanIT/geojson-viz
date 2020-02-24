@@ -49,3 +49,9 @@ body {
 .error-marker:hover .error-message {
   display: block;
 }
+
+.autocomplete {
+  width: 100%;
+  padding: 8px;
+  font-size: 1.25em;
+}
