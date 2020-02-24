@@ -15,12 +15,19 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
   accessToken: accessToken
 }).addTo(map);
 
+const defaultContent = `
+{
+  "type": "FeatureCollection",
+  "features": []
+}
+`.trim();
+
 const app = new Vue({
   data: () => ({
-    content: '',
+    content: defaultContent,
     searchText: '',
     searching: false,
-    searchResults: []
+    searchResults: null
   }),
   mounted: function() {
     this._editor = CodeMirror.fromTextArea(document.querySelector('#geojson-input'), {
@@ -68,6 +75,43 @@ const app = new Vue({
     search: async function() {
       const results = await geocode(this.searchText);
       this.searchResults = results.features;
+    },
+    addToMap: function(result) {
+      let json = null;
+
+      result = {
+        type: result.type,
+        geometry: result.geometry,
+        properties: {
+          address: result.place_name
+        }
+      };
+
+      try {
+        json = JSON.parse(this.content);
+      } catch (err) {}
+
+      console.log('Add to map', result, json);
+
+      if (json == null) {
+        json = JSON.parse(defaultContent);
+        json.features.push(result);
+
+        this.content = JSON.stringify(json, null, '  ');
+
+        this._editor.setValue(this.content);
+        this.draw();
+      } else if (json.type === 'FeatureCollection') {
+        json.features.push(result);
+
+        this.content = JSON.stringify(json, null, '  ');
+
+        this._editor.setValue(this.content);
+        this.draw();
+      }
+
+      this.searchResults = null;
+      this.searchText = '';
     }
   },
   template: `
@@ -77,12 +121,15 @@ const app = new Vue({
           type="text"
           placeholder="Search for Address or Place"
           class="autocomplete"
-          v-on:focus="searching = true"
-          v-on:blur="searching = false"
           v-model="searchText"
           v-on:change="search()">
-        <div class="autocomplete-results">
-          <div v-for="result in searchResults">
+        <div
+          class="autocomplete-results"
+          :class="{ hide: searchResults == null || searchText.length === 0 }">
+          <div
+            v-for="result in searchResults"
+            class="autocomplete-result"
+            v-on:click="addToMap(result)">
             {{result.place_name}}
           </div>
         </div>

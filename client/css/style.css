@@ -1,6 +1,7 @@
 body {
   margin: 0px;
   padding: 0px;
+  font-family: sans-serif;
 }
 
 .container {
@@ -18,6 +19,7 @@ body {
   float: left;
   width: 50%;
   height: 100%;
+  position: relative;
 }
 
 #app textarea {
@@ -25,6 +27,18 @@ body {
   height: 100%;
   border: 1px solid #ddd;
 }
+
+/* general styles */
+
+.hide {
+  display: none;
+}
+
+.show {
+  display: block;
+}
+
+/* editor */
 
 .CodeMirror {
   height: 100% !important;
@@ -53,5 +67,22 @@ body {
 .autocomplete {
   width: 100%;
   padding: 8px;
-  font-size: 1.25em;
+  font-size: 14px;
+}
+
+.autocomplete-results {
+  position: absolute;
+  border: 1px solid #ddd;
+  padding: 5px;
+  top: 35px;
+  width: 100%;
+  z-index: 1000;
+  background-color: white;
+  opacity: 0.8;
+  line-height: 1.5em;
+}
+
+.autocomplete-result {
+  width: 100%;
+  cursor: pointer;
 }
