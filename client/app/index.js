@@ -30,9 +30,13 @@ const app = new Vue({
     searchResults: null
   }),
   mounted: function() {
-    this._editor = CodeMirror.fromTextArea(document.querySelector('#geojson-input'), {
+    this._editor = CodeMirror(document.querySelector('#app'), {
+      mode: 'application/json',
       lineNumbers: true,
-      gutters: ['error']
+      gutters: ['error'],
+      tabSize: 2,
+      theme: 'idea',
+      value: defaultContent
     });
 
     this._editor.on('changes', (instance) => {
@@ -134,7 +138,6 @@ const app = new Vue({
           </div>
         </div>
       </div>
-      <textarea id="geojson-input" v-model="content" v-on:keyup="draw()"></textarea>
     </div>
   `
 });
