@@ -27,7 +27,8 @@ const app = new Vue({
     content: defaultContent,
     searchText: '',
     searching: false,
-    searchResults: null
+    searchResults: null,
+    currentPoint: null
   }),
   mounted: function() {
     this._editor = CodeMirror(document.querySelector('#app'), {
@@ -69,7 +70,16 @@ const app = new Vue({
       if (this._layer != null) {
         this._layer.remove();
       }
-      this._layer = L.geoJSON(data).addTo(map);
+      this._layer = L.geoJSON(data, {
+        onEachFeature: (feature, layer) => {
+          console.log('II', feature)
+          if (feature.type === 'Feature' && feature.geometry.type === 'Point') {
+            layer.on('click', () => {
+              this.currentPoint = feature;
+            });
+          }
+        }
+      }).addTo(map);
 
       const center = centroid(data);
 
@@ -80,7 +90,7 @@ const app = new Vue({
       const results = await geocode(this.searchText);
       this.searchResults = results.features;
     },
-    addToMap: function(result) {
+    addToMap: async function(result) {
       let json = null;
 
       result = {
@@ -95,11 +105,23 @@ const app = new Vue({
         json = JSON.parse(this.content);
       } catch (err) {}
 
+      let extra = null;
+      if (this.currentPoint != null) {
+        extra = {
+          type: 'Feature',
+          properties: {},
+          geometry: await directions(this.currentPoint.geometry, result.geometry)
+        };
+        this.currentPoint = null;
+      }
       console.log('Add to map', result, json);
 
       if (json == null) {
         json = JSON.parse(defaultContent);
         json.features.push(result);
+        if (extra != null) {
+          json.features.push(extra);
+        }
 
         this.content = JSON.stringify(json, null, '  ');
 
@@ -107,6 +129,9 @@ const app = new Vue({
         this.draw();
       } else if (json.type === 'FeatureCollection') {
         json.features.push(result);
+        if (extra != null) {
+          json.features.push(extra);
+        }
 
         this.content = JSON.stringify(json, null, '  ');
 
@@ -123,7 +148,7 @@ const app = new Vue({
       <div>
         <input
           type="text"
-          placeholder="Search for Address or Place"
+          v-bind:placeholder="currentPoint ? 'Search for Directions from ' + currentPoint.properties.address : 'Search for Address or Place'"
           class="autocomplete"
           v-model="searchText"
           v-on:change="search()">
@@ -158,11 +183,24 @@ function makeMarker(msg) {
 }
 
 async function geocode(str) {
-  const url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/' +
-    encodeURIComponent(str) + '.json?' +
-    `access_token=${encodeURIComponent(accessToken)}&autocomplete=true`;
+  let url = 'https://api.mapbox.com/geocoding/v5/' +
+    'mapbox.places/' + encodeURIComponent(str) + '.json?' +
+    'autocomplete=true&' +
+    `access_token=${encodeURIComponent(accessToken)}`;
   
   const res = await axios.get(url);
 
   return res.data;
+}
+
+async function directions(fromPt, toPt) {
+  const fromCoords = fromPt.coordinates.join(',');
+  const toCoords = toPt.coordinates.join(',');
+  let url = 'https://api.mapbox.com/directions/v5/' +
+    'mapbox/driving/' + fromCoords + ';' + toCoords + '?' +
+    'geometries=geojson&' +
+    `access_token=${encodeURIComponent(accessToken)}`;
+
+  const res = await axios.get(url).then(res => res.data);
+  return res.routes[0].geometry;
 }

@@ -13,4 +13,4 @@ module.exports = {
     path: `${__dirname}/bin`,
     filename: '[name].min.js'
   }
-}
+};
